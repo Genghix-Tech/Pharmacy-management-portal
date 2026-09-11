@@ -23,6 +23,28 @@ const KNOWN_DB_PATTERNS: [RegExp, string][] = [
 const RAW_INTERNAL_ERROR = /relation ".*" does not exist|column ".*" does not exist|syntax error|null value in column|permission denied for table|invalid input syntax/i;
 
 /**
+ * Supabase's `{ data, error }` query/RPC results carry a `PostgrestError`
+ * *shaped* object ({ message, details, hint, code }) that, at runtime, is
+ * often a plain object literal rather than an actual `Error` instance —
+ * `error instanceof Error` silently fails for it. Checking for a usable
+ * `.message` string covers that case as well as real `Error`/`AuthError`
+ * instances, instead of falling through to `String(error)` (which for a
+ * plain object is the useless literal "[object Object]").
+ */
+function extractMessage(error: unknown): string {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof (error as { message: unknown }).message === "string" &&
+    (error as { message: string }).message
+  ) {
+    return (error as { message: string }).message;
+  }
+  return error ? String(error) : "";
+}
+
+/**
  * Turns any thrown error into copy that's safe to show a pharmacy owner:
  * never leak table/column names, SQL, or stack traces. Our own `RAISE
  * EXCEPTION '...'` messages inside the Postgres RPCs (supabase/migrations)
@@ -33,7 +55,7 @@ const RAW_INTERNAL_ERROR = /relation ".*" does not exist|column ".*" does not ex
 export function friendlyError(error: unknown, fallback = "Something went wrong. Please try again."): string {
   if (error instanceof AccessDeniedError) return error.message;
 
-  const raw = error instanceof Error ? error.message : String(error);
+  const raw = extractMessage(error);
 
   for (const [pattern, message] of KNOWN_DB_PATTERNS) {
     if (pattern.test(raw)) return message;

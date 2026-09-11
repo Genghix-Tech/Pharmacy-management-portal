@@ -353,8 +353,11 @@ export function PosClient({
         </div>
       </div>
 
+      {/* print:hidden — the dialog is position:fixed with a viewport-relative
+          max-height, which clips printed output to whatever fit on screen.
+          The actual print rendering comes from the plain-flow copy below. */}
       <Dialog open={!!receipt} onOpenChange={(open) => !open && setReceipt(null)}>
-        <DialogContent className="max-h-[85vh] w-full max-w-3xl gap-0 overflow-y-auto p-0 sm:max-w-3xl">
+        <DialogContent className="max-h-[85vh] w-full max-w-3xl gap-0 overflow-y-auto p-0 sm:max-w-3xl print:hidden">
           <DialogHeader className="sr-only">
             <DialogTitle>Sale completed</DialogTitle>
             <DialogDescription>
@@ -375,6 +378,15 @@ export function PosClient({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Print-only duplicate, always in normal document flow (never inside
+          the dialog above) so Print/Download PDF paginate the full invoice
+          instead of whatever happened to be scrolled into view on screen. */}
+      {receipt && (
+        <div className="hidden print:block">
+          <InvoiceDocument sale={receipt.sale} items={receipt.items} invoice={receipt.invoice} />
+        </div>
+      )}
     </div>
   );
 }

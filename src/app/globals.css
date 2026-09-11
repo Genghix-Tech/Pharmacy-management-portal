@@ -163,27 +163,23 @@
   }
 
   /* Print only the invoice/report content, no matter where it sits in the
-     DOM — a standalone page, or nested inside an open modal (e.g. the POS
-     checkout dialog) with dashboard chrome and other page content still
-     mounted behind it. Guarded with :has() so pages with neither marker
-     print normally instead of going blank. */
-  body:has(.invoice-print) *,
-  body:has(.report-print) * {
-    visibility: hidden;
+     DOM — a standalone page, or (via a dedicated print:block copy rendered
+     in normal document flow — see e.g. pos-client.tsx) alongside an open
+     modal whose own fixed/transformed positioning would otherwise clip
+     printed output to whatever fit on screen. Ancestors of the printable
+     element are deliberately left alone (not display:none'd) so their box
+     keeps sizing around the visible child instead of collapsing it — only
+     unrelated "cousin" branches (sidebar, topbar, a dialog's own on-screen
+     copy, etc.) are removed from layout entirely. display:none rather than
+     visibility:hidden so no blank pages are wasted on their reserved space.
+     Guarded with :has() so pages with neither marker print normally. */
+  body:has(.invoice-print) *:not(.invoice-print):not(.invoice-print *):not(:has(.invoice-print)),
+  body:has(.report-print) *:not(.report-print):not(.report-print *):not(:has(.report-print)) {
+    display: none !important;
   }
-  .invoice-print,
-  .invoice-print *,
-  .report-print,
-  .report-print * {
-    /* !important: must outrank the body:has(...) * hiding rule above,
-       which is more specific (body + :has()) than a bare class selector. */
-    visibility: visible !important;
-  }
+
   .invoice-print,
   .report-print {
-    position: absolute;
-    inset: 0;
-    width: 100%;
     color: #0b0b0b !important;
     box-shadow: none !important;
   }
