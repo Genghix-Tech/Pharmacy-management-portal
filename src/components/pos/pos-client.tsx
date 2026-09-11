@@ -234,7 +234,7 @@ export function PosClient({
               >
                 <p className="line-clamp-2 text-sm font-medium">{m.name}</p>
                 {m.generic_name && <p className="line-clamp-1 text-xs text-muted-foreground">{m.generic_name}</p>}
-                <div className="mt-auto flex w-full items-center justify-between pt-1">
+                <div className="mt-auto flex w-full flex-wrap items-center justify-between gap-1 pt-1">
                   <span className="font-semibold tabular-nums">{formatCurrency(m.selling_price, currency)}</span>
                   <Badge variant="outline" className="text-[10px]">
                     {m.quantity} {m.unit_type}(s)
@@ -275,7 +275,16 @@ export function PosClient({
                     <Button type="button" variant="outline" size="icon-xs" onClick={() => updateQuantity(l.medicineId, l.quantity - 1)}>
                       <Minus />
                     </Button>
-                    <span className="w-8 text-center text-sm tabular-nums">{l.quantity}</span>
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      max={l.availableStock}
+                      step={1}
+                      value={l.quantity}
+                      onChange={(e) => updateQuantity(l.medicineId, Math.trunc(Number(e.target.value)) || 1)}
+                      className="h-6 w-12 px-1 text-center text-sm tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    />
                     <Button type="button" variant="outline" size="icon-xs" onClick={() => updateQuantity(l.medicineId, l.quantity + 1)}>
                       <Plus />
                     </Button>

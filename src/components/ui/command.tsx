@@ -60,7 +60,10 @@ function CommandDialog({
         )}
         showCloseButton={showCloseButton}
       >
-        {children}
+        {/* CommandInput/CommandList/CommandItem read from cmdk's own Command
+            context — without this root wrapping them, that context is
+            undefined and they throw the moment the dialog opens. */}
+        <Command className="rounded-xl! [&_[cmdk-group-heading]]:px-2">{children}</Command>
       </DialogContent>
     </Dialog>
   )
