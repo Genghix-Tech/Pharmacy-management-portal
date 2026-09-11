@@ -36,7 +36,7 @@ export function DashboardTopbar({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur supports-backdrop-filter:bg-background/80 sm:px-6">
+    <header className="no-print sticky top-0 z-20 flex h-16 shrink-0 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur supports-backdrop-filter:bg-background/80 sm:px-6">
       <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileNavOpen(true)}>
         <Menu />
         <span className="sr-only">Open menu</span>

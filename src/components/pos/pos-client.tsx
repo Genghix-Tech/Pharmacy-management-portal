@@ -7,9 +7,8 @@ import {
   Loader2,
   Minus,
   Plus,
-  Printer,
-  Search,
   ShoppingCart,
+  Search,
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,15 +17,16 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BarcodeScannerButton } from "@/components/shared/barcode-scanner";
 import { CustomerPicker } from "@/components/pos/customer-picker";
 import { EmptyState } from "@/components/shared/empty-state";
+import { InvoiceDocument } from "@/components/invoices/invoice-document";
 import { createClient } from "@/lib/supabase/client";
 import { createSale } from "@/lib/actions/sales";
 import { formatCurrency } from "@/lib/utils/format";
 import { PAYMENT_METHOD_LABEL } from "@/lib/utils/status";
-import type { Customer, MedicineStatusRow, PaymentMethod } from "@/lib/types/database";
+import type { Customer, Invoice, MedicineStatusRow, PaymentMethod, Sale, SaleItem } from "@/lib/types/database";
 
 type SearchResult = Pick<
   MedicineStatusRow,
@@ -66,7 +66,7 @@ export function PosClient({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [notes, setNotes] = useState("");
   const [isSubmitting, startSubmit] = useTransition();
-  const [receipt, setReceipt] = useState<{ id: string; invoiceNumber: string; total: number } | null>(null);
+  const [receipt, setReceipt] = useState<{ sale: Sale; items: SaleItem[]; invoice: Invoice } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -195,7 +195,19 @@ export function PosClient({
         toast.error(result.error);
         return;
       }
-      setReceipt({ id: result.data.id, invoiceNumber: result.data.invoice_number, total: result.data.total_amount });
+
+      const sale = result.data;
+      const [{ data: saleItems }, { data: invoice }] = await Promise.all([
+        supabase.from("sale_items").select("*").eq("sale_id", sale.id),
+        supabase.from("invoices").select("*").eq("sale_id", sale.id).maybeSingle(),
+      ]);
+
+      if (invoice) {
+        setReceipt({ sale, items: saleItems ?? [], invoice });
+      } else {
+        // Sale still succeeded — just couldn't load the invoice preview.
+        toast.success(`Sale completed — Invoice ${sale.invoice_number}`);
+      }
       setCart([]);
       setCustomerId(null);
       setNotes("");
@@ -342,21 +354,25 @@ export function PosClient({
       </div>
 
       <Dialog open={!!receipt} onOpenChange={(open) => !open && setReceipt(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Sale completed 🎉</DialogTitle>
+        <DialogContent className="max-h-[85vh] w-full max-w-3xl gap-0 overflow-y-auto p-0 sm:max-w-3xl">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Sale completed</DialogTitle>
             <DialogDescription>
-              Invoice {receipt?.invoiceNumber} — {receipt && formatCurrency(receipt.total, currency)}
+              Invoice {receipt?.invoice.invoice_number} — {receipt && formatCurrency(receipt.sale.total_amount, currency)}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="sm:justify-between">
-            <Button variant="outline" onClick={() => setReceipt(null)}>New sale</Button>
-            {receipt && (
-              <Button render={<a href={`/invoices/${receipt.id}/print`} target="_blank" rel="noopener noreferrer" />}>
-                <Printer /> View & print invoice
-              </Button>
-            )}
-          </DialogFooter>
+          {receipt && (
+            <InvoiceDocument
+              sale={receipt.sale}
+              items={receipt.items}
+              invoice={receipt.invoice}
+              extraActions={
+                <Button onClick={() => setReceipt(null)}>
+                  <ShoppingCart /> New sale
+                </Button>
+              }
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

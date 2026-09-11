@@ -14,10 +14,13 @@ export function InvoiceDocument({
   sale,
   items,
   invoice,
+  extraActions,
 }: {
   sale: Sale;
   items: SaleItem[];
   invoice: Invoice;
+  /** Extra buttons rendered alongside Print/Download/Share — e.g. "New Sale" when shown inside the POS checkout dialog. */
+  extraActions?: React.ReactNode;
 }) {
   const [receiptMode, setReceiptMode] = useState(false);
   const pharmacy = invoice.pharmacy_snapshot;
@@ -59,6 +62,7 @@ export function InvoiceDocument({
           <Button onClick={() => window.print()}>
             <Printer /> Print Invoice
           </Button>
+          {extraActions}
         </div>
       </div>
 

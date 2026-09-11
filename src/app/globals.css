@@ -161,8 +161,29 @@
     background: #ffffff !important;
     color: #0b0b0b !important;
   }
+
+  /* Print only the invoice/report content, no matter where it sits in the
+     DOM — a standalone page, or nested inside an open modal (e.g. the POS
+     checkout dialog) with dashboard chrome and other page content still
+     mounted behind it. Guarded with :has() so pages with neither marker
+     print normally instead of going blank. */
+  body:has(.invoice-print) *,
+  body:has(.report-print) * {
+    visibility: hidden;
+  }
+  .invoice-print,
+  .invoice-print *,
+  .report-print,
+  .report-print * {
+    /* !important: must outrank the body:has(...) * hiding rule above,
+       which is more specific (body + :has()) than a bare class selector. */
+    visibility: visible !important;
+  }
   .invoice-print,
   .report-print {
+    position: absolute;
+    inset: 0;
+    width: 100%;
     color: #0b0b0b !important;
     box-shadow: none !important;
   }
